@@ -10,7 +10,7 @@
 - **What the sample shows:** 220 files hold about 191 distinct agreements. 48 files form 19 version chains, which is where the wrong-version risk sits. 12 files can't be tied to any counterparty, and nothing in the data proves a document is signed.
 - **Why now:** Wordsmith's assistant reads the repository. A messy repository doesn't just slow people down; it makes the AI give wrong answers with confidence.
 
-See the [Data Audit](data-audit.md) for the evidence and the [Design Decisions](design-decisions.md) log for the reasoning behind this brief.
+See the [Data Audit](02-data-audit.md) for the evidence and the [Design Decisions](05-design-decisions.md) log for the reasoning behind this brief.
 
 > **Updated after the build.** This brief was written before the prototype; it's kept as the plan, with notes where the build differs. The main change: each decision applies as it's made, with an undo on its card, and only renaming waits for the end. Counts from the audit (191 agreements, 19 chains, 12 unidentified) came out as about 207 agreements, 10 chains and 10 unidentified in the build, because it links versions cautiously.
 
@@ -114,7 +114,7 @@ For a real product, track how often the retrieved document is correct, how long 
 - One person owns the clean-up and completes it in one sitting. It's a one-user flow, not collaborative.
 - The repository lives in Wordsmith, connected to wherever files come from (email, Slack, the user's machine, OneDrive). Apply reorganises it there, and people still browse it. Wordsmith already has access to every contract, so sending content to the model is not a concern.
 
-The full list is in [assumptions.md](assumptions.md).
+The full list is in [03-assumptions.md](03-assumptions.md).
 - The excerpt is the most reliable signal available; the filename and folder are claims, not facts.
 
 **Where this pushes back on the task brief:**

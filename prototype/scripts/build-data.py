@@ -1,6 +1,6 @@
 """Build the register rows for every counterparty.
 
-Reads the per-file table in convention-simulation.md (new folder, new name, status label, note)
+Reads the per-file table in backup/convention-simulation.md (new folder, new name, status label, note)
 and the dataset CSV (excerpt, original path), then sets a version role on each file.
 A version chain is files in the same counterparty/type folder with an identical excerpt.
 
@@ -9,7 +9,7 @@ A version chain is files in the same counterparty/type folder with an identical 
 import csv, json, os, re, sys, collections
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SIM = os.path.join(HERE, '..', '..', 'convention-simulation.md')
+SIM = os.path.join(HERE, '..', '..', 'backup', 'convention-simulation.md')
 OUT = os.path.join(HERE, '..', 'src', 'generated.json')
 
 csv_rows = {r['file_id']: r for r in csv.DictReader(open(os.path.expanduser(sys.argv[1])))}

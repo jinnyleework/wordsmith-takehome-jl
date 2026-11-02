@@ -1,4 +1,4 @@
-# Design
+# Screens and states
 
 Every screen, card and state that needs designing, with the job each one does. Use it as the checklist for mockups and the build.
 

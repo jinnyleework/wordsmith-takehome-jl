@@ -207,7 +207,7 @@ export function agreementDate(r: FileRow, source: DateSource | null): string | n
   return source === 'modified' ? r.modified : r.date
 }
 
-// How the team files today, from the audit (design-decisions.md, "Setting the convention")
+// How the team files today, from the audit (05-design-decisions.md, "Setting the convention")
 export const filedToday = [
   { label: 'Type', files: 54, color: 'bg-viz-orange' },
   { label: 'Status', files: 49, color: 'bg-viz-green' },

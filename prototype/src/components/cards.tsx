@@ -1,5 +1,5 @@
 // Chat cards: every proposal from the assistant arrives as one of these.
-// Words carry intent; controls carry commitment (design.md, "Cards in the chat").
+// Words carry intent; controls carry commitment (07-screens-and-states.md, "Cards in the chat").
 // Visual system from the Figma report card (node 2009:143219): grey title bar,
 // white sections split by grey sub-header bars, outlined tiles.
 import { useEffect, useId, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react'

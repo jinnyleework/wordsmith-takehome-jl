@@ -1,4 +1,4 @@
-// Rows come from scripts/build-data.py, which reads convention-simulation.md
+// Rows come from scripts/build-data.py, which reads backup/convention-simulation.md
 // and the dataset CSV; re-run it to regenerate. Each row carries its end-state
 // name and version role; flow.ts derives what the preview shows before then.
 import generated from './generated.json'
