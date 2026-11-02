@@ -75,7 +75,7 @@ for k,v in sorted(collections.Counter(FMAP['counterparty'](r) for r in rows).ite
 # company in their filename is probably not the signatory.
 MON={m:i+1 for i,m in enumerate(['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'])}
 def iso(f):
-    """Return (date, note). Day-first unless the day-first reading is impossible (UK team)."""
+    """Return (date, note). Day-first (the addresses point to a UK team) unless the day-first reading is impossible."""
     m=re.search(r'(?<!\d)(20[12]\d)(\d\d)(\d\d)(?!\d)',f)
     if m: return f'{m[1]}-{m[2]}-{m[3]}',''
     m=re.search(r'(?<!\d)(\d\d)[-.](\d\d)[-.](\d{4}|\d\d)(?!\d)',f)

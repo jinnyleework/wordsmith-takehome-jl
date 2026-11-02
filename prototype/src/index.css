@@ -27,6 +27,8 @@
 }
 
 html, body, #root { height: 100%; }
+/* The whole app renders at 85%; src/zoom.ts converts rects for anything positioned from them */
+html { zoom: 0.85; }
 body {
   margin: 0;
   font-family: var(--font-sans);

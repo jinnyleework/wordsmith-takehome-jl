@@ -38,7 +38,7 @@ Rules for explaining:
 
 - **Lead with counts and consequences,** not process. "148 files renamed" beats "I analysed the naming patterns".
 - **Name the source of each fact:** filename, excerpt or folder.
-- **Explain assumptions after acting, at the moment they apply.** "I read `08-12-20` as 8 December, since your addresses are in the UK."
+- **Explain assumptions after acting, at the moment they apply.** "I read `08-12-20` as 8 December, since your addresses are in the UK, where the day comes first."
 - **Explain restraint too.** "I kept Vantage's 5 partnerships separate: they cover different deals."
 
 ## Confirmation: what needs a yes, and how it's given

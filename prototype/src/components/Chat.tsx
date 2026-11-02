@@ -4,6 +4,7 @@ import { IconMessageFilled } from '@tabler/icons-react'
 import { FileIcon } from './FileIcon'
 import { ActionPlayback, type PlaybackItem } from './cards'
 import type { Decisions, Step } from '../flow'
+import { cssRect, zoom } from '../zoom'
 
 export interface Message {
   role: 'user' | 'assistant'
@@ -33,6 +34,18 @@ export interface Message {
     durations?: number[]
     rewriteAt?: number
   }
+}
+
+const chatWidth = { initial: 380, min: 320, max: 680, key: 'wordsmith-chat-width' }
+
+function savedChatWidth() {
+  try {
+    const saved = Number(localStorage.getItem(chatWidth.key))
+    if (saved >= chatWidth.min && saved <= chatWidth.max) return saved
+  } catch {
+    // Storage can be blocked; fall back to the default
+  }
+  return chatWidth.initial
 }
 
 export function Chat({
@@ -70,6 +83,48 @@ export function Chat({
   }, [about])
   const scroller = useRef<HTMLDivElement>(null)
   const [atBottom, setAtBottom] = useState(true)
+  const [width, setWidth] = useState(savedChatWidth)
+
+  // Replies are written one message at a time: an assistant message waits, unshown,
+  // until every message before it has finished writing
+  const written = useRef(new WeakSet<Message>())
+  const [, setWrittenCount] = useState(0)
+  function markWritten(m: Message) {
+    if (written.current.has(m)) return
+    written.current.add(m)
+    setWrittenCount((n) => n + 1)
+  }
+  const writing = messages.findIndex(
+    (m) => m.role === 'assistant' && !m.working && !!m.text && m.stream !== false && !written.current.has(m),
+  )
+
+  // Drag the right edge to resize; the width is remembered for next time
+  function startResize(e: React.PointerEvent<HTMLDivElement>) {
+    e.preventDefault()
+    const startX = e.clientX
+    const startWidth = width
+    const z = zoom()
+    let next = startWidth
+    const move = (ev: PointerEvent) => {
+      next = Math.min(chatWidth.max, Math.max(chatWidth.min, startWidth + (ev.clientX - startX) / z))
+      setWidth(next)
+    }
+    const up = () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      document.body.style.removeProperty('cursor')
+      document.body.style.removeProperty('user-select')
+      try {
+        localStorage.setItem(chatWidth.key, String(Math.round(next)))
+      } catch {
+        // Storage can be blocked; the width just won't be remembered
+      }
+    }
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+  }
 
   function checkBottom() {
     const el = scroller.current
@@ -95,7 +150,17 @@ export function Chat({
   }
 
   return (
-    <section className="flex w-[380px] shrink-0 flex-col border-r border-border-subtle">
+    <section className="relative flex shrink-0 flex-col border-r border-border-subtle" style={{ width }}>
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize chat"
+        onPointerDown={startResize}
+        onDoubleClick={() => setWidth(chatWidth.initial)}
+        className="group absolute inset-y-0 -right-1.5 z-20 w-3 cursor-col-resize"
+      >
+        <span className="absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-transparent transition-colors group-hover:bg-border-base group-active:bg-brand" />
+      </div>
       <div className="relative flex min-h-0 flex-1 flex-col">
       {/* The header floats over the feed; what scrolls under it blurs progressively */}
       <header className="absolute inset-x-0 top-0 z-10 flex h-12 items-center gap-3 px-4">
@@ -140,7 +205,7 @@ export function Chat({
           </div>
         )}
         {messages.map((m, i) =>
-          m.role === 'user' ? (
+          m.role === 'assistant' && writing >= 0 && i > writing ? null : m.role === 'user' ? (
             <div key={i} className="flex flex-col items-end gap-1 self-end">
               {m.about && (
                 <span className="flex items-center gap-1 text-body-s text-text-subtle">
@@ -157,6 +222,7 @@ export function Chat({
               card={m.card && renderCard(m.card)}
               onWorkingDone={() => onWorkingDone(i)}
               onWorkingStep={(step) => onWorkingStep(i, step)}
+              onWritten={() => markWritten(m)}
               onShow={onShow}
               filing={filing}
             />
@@ -224,6 +290,7 @@ function AssistantMessage({
   card,
   onWorkingDone,
   onWorkingStep,
+  onWritten,
   onShow,
   filing,
 }: {
@@ -231,6 +298,7 @@ function AssistantMessage({
   card?: ReactNode
   onWorkingDone: () => void
   onWorkingStep: (step: number) => void
+  onWritten: () => void
   onShow?: (group: string, rowIds?: string[], mode?: 'hold' | 'release') => void
   filing: Decisions
 }) {
@@ -239,6 +307,15 @@ function AssistantMessage({
   const [textDone, setTextDone] = useState(instant || !message.text)
   const revealed = useRef<HTMLDivElement>(null)
   const shown = textDone && !!(card || message.playback)
+
+  // Lets the next message start writing. Re-reported if the message object is replaced.
+  const onWrittenRef = useRef(onWritten)
+  useLayoutEffect(() => {
+    onWrittenRef.current = onWritten
+  })
+  useEffect(() => {
+    if (textDone) onWrittenRef.current()
+  }, [textDone, message])
 
   // A card lands after its text has streamed, so bring all of it into view then,
   // and again while it settles (reveal animation, late layout)
@@ -297,8 +374,8 @@ function AssistantMessage({
 function scrollIntoChat(el: HTMLElement) {
   const scroller = el.closest<HTMLElement>('[data-chat-scroll]')
   if (!scroller) return
-  const box = el.getBoundingClientRect()
-  const view = scroller.getBoundingClientRect()
+  const box = cssRect(el)
+  const view = cssRect(scroller)
   const gap = 16
   // The header floats over the top of the feed, so the visible area starts below it
   const top = view.top + parseFloat(getComputedStyle(scroller).paddingTop)

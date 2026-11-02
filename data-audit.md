@@ -96,4 +96,4 @@ Six cases from this dataset show each kind of judgement. Together they make a de
 - Is there an authoritative signature source (e-signature platform, executed-copies log) that would turn "labelled signed" into "signed"?
 - Who owns personal data in employment files? Should the tool move them, or only flag them to HR?
 - Should `Templates (do not use)` and `Backup - DO NOT DELETE` be off-limits, or are they themselves mess?
-- For ambiguous dates, does the team's locale (UK, given the Edinburgh, Leith and Glasgow addresses) settle day-first ordering?
+- For ambiguous dates, does the team's locale settle day-first or month-first? The Edinburgh, Leith and Glasgow addresses suggest a UK team, which would mean day-first, and that decides the order of versions in some chains.

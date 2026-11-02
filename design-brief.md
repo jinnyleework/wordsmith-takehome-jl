@@ -110,7 +110,7 @@ For a real product, track how often the retrieved document is correct, how long 
 
 **Assumptions:**
 
-- A UK team (the addresses are in Edinburgh, Leith, Glasgow and Manchester), so ambiguous dates are read day-first and the assumption is stated.
+- **Dates are read day-first.** A filename like `08-12-20` could be 8 December or 12 August. The addresses (Edinburgh, Leith, Glasgow, Manchester) point to a UK team, which writes the day first, so ambiguous dates are read that way and the reading should be shown to the user (not built in the prototype). It matters because the date decides the order of versions in a chain.
 - One person owns the clean-up and completes it in one sitting. It's a one-user flow, not collaborative.
 - The repository lives in Wordsmith, connected to wherever files come from (email, Slack, the user's machine, OneDrive). Apply reorganises it there, and people still browse it. Wordsmith already has access to every contract, so sending content to the model is not a concern.
 

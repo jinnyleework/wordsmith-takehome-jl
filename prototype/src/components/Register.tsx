@@ -37,6 +37,7 @@ import {
   type ViewRow,
   type VersionLabel,
 } from '../flow'
+import { cssRect, viewport } from '../zoom'
 
 type ColumnId = 'name' | 'counterparty' | 'type' | 'status' | 'date' | 'version' | 'notes'
 
@@ -702,11 +703,11 @@ function EditableSelect<T extends string>({
   }, [open])
 
   function toggle() {
-    const rect = root.current?.getBoundingClientRect()
+    const rect = root.current && cssRect(root.current)
     if (!rect) return
     const height = options.length * 28 + 8 + (onAdd ? 40 : 0)
-    const top = rect.bottom + 4 + height > window.innerHeight ? Math.max(8, rect.top - 4 - height) : rect.bottom + 4
-    const left = Math.min(rect.left, window.innerWidth - 176 - 8)
+    const top = rect.bottom + 4 + height > viewport().height ? Math.max(8, rect.top - 4 - height) : rect.bottom + 4
+    const left = Math.min(rect.left, viewport().width - 176 - 8)
     setPlace({ top, left: Math.max(8, left) })
     setOpen((current) => !current)
   }
@@ -959,10 +960,10 @@ function NoteText({ text, writing = false, delay = 0 }: { text: string; writing?
       onMouseEnter={(e) => {
         const el = e.currentTarget
         if (!text || el.scrollWidth <= el.clientWidth + 1) return
-        const r = el.getBoundingClientRect()
-        const maxWidth = Math.min(360, window.innerWidth - 16)
-        const left = Math.max(8, Math.min(r.left, window.innerWidth - maxWidth - 8))
-        const above = r.bottom + 72 > window.innerHeight
+        const r = cssRect(el)
+        const maxWidth = Math.min(360, viewport().width - 16)
+        const left = Math.max(8, Math.min(r.left, viewport().width - maxWidth - 8))
+        const above = r.bottom + 72 > viewport().height
         setTip({ top: above ? r.top - 4 : r.bottom + 4, left, maxWidth, above })
       }}
       onMouseLeave={() => setTip(null)}
@@ -991,10 +992,11 @@ function NameText({ name, children }: { name: string; children: React.ReactNode 
       onMouseEnter={(e) => {
         const el = e.currentTarget
         if (el.scrollWidth <= el.clientWidth + 1) return
-        const r = el.getBoundingClientRect()
-        const row = el.closest('tr')?.getBoundingClientRect() ?? r
+        const r = cssRect(el)
+        const tr = el.closest('tr')
+        const row = tr ? cssRect(tr) : r
         const left = Math.max(8, r.left - 8)
-        const maxWidth = Math.min(420, window.innerWidth - left - 8)
+        const maxWidth = Math.min(420, viewport().width - left - 8)
         setTip({ top: row.bottom + 4, left, maxWidth })
       }}
       onMouseLeave={() => setTip(null)}

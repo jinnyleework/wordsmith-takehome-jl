@@ -9,7 +9,7 @@ Every assumption the design rests on, in one place. If one turns out wrong, the 
 | A1 | **One user, not collaborative.** One person owns the clean-up and runs it end to end. No shared sessions, approvals or roles. | Keeps the flow focused; collaboration is a separate problem | Pausing ("waiting on a person" means the user asks someone outside the tool) |
 | A2 | **The user completes the flow in one sitting** in the prototype. | The flow must be short enough; pausing is designed but not built | Three tiers, ~12–15 questions |
 | A3 | **The user is in-house counsel or legal ops,** able to make policy calls for most patterns. | That's who inherits the repository | Who decides what (human/AI line) |
-| A4 | **A UK team.** Ambiguous dates are read day-first, and the assumption is stated on screen. | The addresses are in Edinburgh, Leith, Glasgow and Manchester | Date parsing; version order in chains |
+| A4 | **Ambiguous dates are read day-first, because the team looks UK-based.** A filename like `08-12-20` could be 8 December or 12 August. The addresses (Edinburgh, Leith, Glasgow, Manchester) point to a UK team, which writes the day first. The reading should be shown so the user can correct it (not built in the prototype). | 17 filenames are ambiguous, and the reading decides the order of versions in a chain | Date parsing; version order in chains |
 
 ## Tool and environment
 

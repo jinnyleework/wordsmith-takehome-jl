@@ -6,9 +6,19 @@ import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 
+// Tokens this server may spend on free-text replies before it stops calling Cursor.
+// Restart the dev server to refill it. Override with ASK_TOKEN_BUDGET=300000 npm run dev.
+const BUDGET = Number(process.env.ASK_TOKEN_BUDGET) || 200_000
+// Vite re-imports this file after every edit, so the running total lives on globalThis.
+const spend = (globalThis.__wordsmithAskSpend ??= { tokens: 0 })
+const HISTORY_TURNS = 6
+const TURN_CHARS = 600
+const DETAILED_FOLDERS = 3
+
 const SYSTEM = `You are the assistant inside a contract-repository prototype. A scripted walk proposes how to file the agreements, one card at a time. You handle what the user types: questions, objections, and anomalies that are not the card in front of them.
 
-Each message you receive contains the current transcript, the open card if one is waiting, and a snapshot of every file as the preview shows it now. That snapshot is the only source of truth for what the files are. Earlier turns can be stale.
+Each message you receive contains the recent transcript, the open card if one is waiting, and a snapshot of every file as the preview shows it now. That snapshot is the only source of truth for what the files are. Earlier turns can be stale.
+To keep the message short, only the folders the question is about carry path, note and excerpt. Every other file lists id, name, type, status, handling, version and date. If an answer needs an excerpt you were not given, say which file to ask about.
 
 Reply with one JSON object and nothing else, no markdown fence:
 {"text":"the reply","group":null,"decision":null}
@@ -25,7 +35,6 @@ Rules:
 - You cannot move files. A decision only tells the app to update the preview through the card the user was already on.
 - Keep the reply short, as a colleague who has read the files.`
 
-let agentPromise = null
 let chain = Promise.resolve()
 
 function enqueue(task) {
@@ -37,27 +46,14 @@ function enqueue(task) {
   return run
 }
 
-function getAgent() {
-  if (!agentPromise) {
-    agentPromise = Agent.create({
-      model: { id: 'composer-2.5' },
-      tools: [],
-      local: { cwd: root, settingSources: [] },
-    }).catch((err) => {
-      agentPromise = null
-      throw err
-    })
-  }
-  return agentPromise
-}
-
-async function reset() {
-  const pending = agentPromise
-  agentPromise = null
-  if (!pending) return { ok: true }
-  const agent = await pending
-  await agent[Symbol.asyncDispose]()
-  return { ok: true }
+// A new agent for every question. The message already carries the transcript, so an
+// agent that remembered earlier turns would pay for them twice, more on every turn.
+function createAgent() {
+  return Agent.create({
+    model: { id: 'composer-2.5' },
+    tools: [],
+    local: { cwd: root, settingSources: [] },
+  })
 }
 
 function readBody(req) {
@@ -103,6 +99,39 @@ function cleanDecision(decision, open) {
   return { step: open.step, value: decision.value }
 }
 
+function compactRow(row, detailed) {
+  const { path, note, excerpt, ...rest } = row
+  const out = detailed ? { ...rest, path, note, excerpt } : rest
+  return Object.fromEntries(Object.entries(out).filter(([, value]) => value !== null && value !== undefined && value !== ''))
+}
+
+// Full detail only for the folders in play: the asked-about file's folder, then folders
+// named in the latest message or the last two turns.
+function detailedFolders(body) {
+  const folders = (body.view ?? []).map((group) => group.folder)
+  const picked = []
+  if (body.about?.folder && folders.includes(body.about.folder)) picked.push(body.about.folder)
+  const recent = [body.text, ...(body.history ?? []).slice(-2).map((turn) => turn.text)].join('\n').toLowerCase()
+  for (const folder of folders) {
+    const name = folder.replace(/^_/, '').toLowerCase()
+    if (!picked.includes(folder) && recent.includes(name)) picked.push(folder)
+  }
+  return new Set(picked.slice(0, DETAILED_FOLDERS))
+}
+
+function snapshot(body) {
+  const detailed = detailedFolders(body)
+  return (body.view ?? []).map((group) => ({
+    folder: group.folder,
+    summary: group.summary,
+    files: (group.files ?? []).map((row) => compactRow(row, detailed.has(group.folder))),
+  }))
+}
+
+function clip(text) {
+  return text.length > TURN_CHARS ? `${text.slice(0, TURN_CHARS)}…` : text
+}
+
 function promptFor(body) {
   const lines = [
     `Mode: ${body.mode}`,
@@ -119,8 +148,8 @@ function promptFor(body) {
     lines.push(`The question is about this file: ${JSON.stringify(body.about)}`)
   }
   lines.push('Transcript so far:')
-  for (const turn of body.history ?? []) lines.push(`${turn.role}: ${turn.text}`)
-  lines.push(`Latest message: ${body.text}`, `File snapshot: ${JSON.stringify(body.view)}`)
+  for (const turn of (body.history ?? []).slice(-HISTORY_TURNS)) lines.push(`${turn.role}: ${clip(turn.text)}`)
+  lines.push(`Latest message: ${body.text}`, `File snapshot: ${JSON.stringify(snapshot(body))}`)
   // The instructions travel with the message. A custom system prompt is not enabled on every account.
   return `${SYSTEM}\n\n${lines.join('\n')}`
 }
@@ -129,13 +158,27 @@ async function ask(body) {
   if (!body || typeof body.text !== 'string' || !body.text.trim()) {
     return { text: 'Ask me about a file, a company, or the choice on the card.', group: null, decision: null }
   }
-  const agent = await getAgent()
-  const run = await agent.send(promptFor(body), { local: { force: true } })
-  console.log(`cursor ask ${run.id}`)
-  const result = await run.wait()
+  if (spend.tokens >= BUDGET) {
+    const error = new Error(`The demo’s token budget is used up (${spend.tokens.toLocaleString()} of ${BUDGET.toLocaleString()}). Restart the dev server to refill it.`)
+    error.status = 429
+    throw error
+  }
+  const prompt = promptFor(body)
+  const agent = await createAgent()
+  let result
+  try {
+    const run = await agent.send(prompt, { local: { force: true } })
+    console.log(`cursor ask ${run.id}`)
+    result = await run.wait()
+    const used = result.usage?.totalTokens ?? (await agent.getUsage().catch(() => null))?.usage.totalTokens
+    // No usage reported: count roughly four characters a token so the budget still moves.
+    spend.tokens += used ?? Math.ceil((prompt.length + (result.result ?? '').length) / 4)
+    console.log(`cursor ask tokens ${used ?? 'estimated'} · ${spend.tokens.toLocaleString()} of ${BUDGET.toLocaleString()} used`)
+  } finally {
+    await agent[Symbol.asyncDispose]().catch(() => {})
+  }
   if (result.status !== 'finished') {
     const message = result.error?.message || `Cursor run ${result.status}`
-    if (isAuthFailure(new Error(message))) await dropAgent()
     throw new Error(message)
   }
   const parsed = parseAnswer(result.result)
@@ -161,18 +204,6 @@ function isAuthFailure(err) {
   return /api key|unauthenticated|not logged|logged out/i.test(message)
 }
 
-async function dropAgent() {
-  const pending = agentPromise
-  agentPromise = null
-  if (!pending) return
-  try {
-    const agent = await pending
-    await agent[Symbol.asyncDispose]()
-  } catch {
-    // The failed agent is already unusable.
-  }
-}
-
 export function handle(req, res) {
   if (req.method !== 'POST') {
     send(res, 405, { message: 'POST only' })
@@ -183,11 +214,11 @@ export function handle(req, res) {
   const bodyReady = readBody(req)
   return enqueue(async () => {
     try {
-      if (path === '/api/ask/reset') return await reset()
+      // Nothing to clear: each question already gets its own agent. The budget is kept.
+      if (path === '/api/ask/reset') return { ok: true }
       return await ask(await bodyReady)
     } catch (err) {
       if (!isAuthFailure(err)) throw err
-      await dropAgent()
       const error = new Error(LOGIN)
       error.status = 401
       throw error
@@ -195,7 +226,7 @@ export function handle(req, res) {
   })
     .then((result) => send(res, 200, result))
     .catch((err) => {
-      const status = err.status === 401 ? 401 : 500
+      const status = err.status === 401 || err.status === 429 ? err.status : 500
       send(res, status, { message: err instanceof Error ? err.message : 'Cursor request failed' })
     })
 }

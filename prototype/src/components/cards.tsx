@@ -51,6 +51,7 @@ import {
   type ViewRow,
 } from '../flow'
 import { allRows, formatDate, type FileRow, type Status } from '../data'
+import { cssRect, viewport } from '../zoom'
 
 // ---- Shared pieces ----
 
@@ -441,7 +442,7 @@ export function OpeningReportCard({ onStart, started }: { onStart: () => void; s
   return (
     <Card title="Organisation report">
       <div className="flex gap-2 p-2">
-        <Tile value={stats.agreements} label="Total agreements" />
+        <Tile value={stats.files} label="Total files" />
         <Tile value={stats.counterparties} label="Counterparty categories" />
         <Tile value={stats.originalFolders} label="Folders found currently" />
       </div>
@@ -541,10 +542,10 @@ function Pill({ children, name, full }: { children: ReactNode; name?: string; fu
     const clipped = !!text && (text.scrollWidth > text.clientWidth + 1 || text.scrollHeight > text.clientHeight + 1)
     if (!clipped) return
     const anchor = e.currentTarget.closest('[data-example-row]') ?? e.currentTarget
-    const r = anchor.getBoundingClientRect()
-    const maxWidth = Math.min(360, window.innerWidth - 16)
-    const left = Math.max(8, Math.min(r.left, window.innerWidth - maxWidth - 8))
-    const above = r.bottom + 48 > window.innerHeight
+    const r = cssRect(anchor)
+    const maxWidth = Math.min(360, viewport().width - 16)
+    const left = Math.max(8, Math.min(r.left, viewport().width - maxWidth - 8))
+    const above = r.bottom + 48 > viewport().height
     setTip({ top: above ? r.top - 4 : r.bottom + 4, left, maxWidth, above })
   }
 
@@ -658,10 +659,10 @@ function LevelCard<K extends string>({
                     }}
                     onMouseEnter={(e) => {
                       if (decided || o.disabled) return
-                      const r = e.currentTarget.getBoundingClientRect()
-                      const card = list.current!.getBoundingClientRect()
+                      const r = cssRect(e.currentTarget)
+                      const card = cssRect(list.current!)
                       // Keep the preview on screen when the option sits near the bottom of the chat
-                      setHover({ key: o.key, top: Math.min(r.top, window.innerHeight - 160), left: card.right + 8 })
+                      setHover({ key: o.key, top: Math.min(r.top, viewport().height - 160), left: card.right + 8 })
                     }}
                     className={`flex w-full flex-col gap-0.5 rounded-xl border px-2 py-1 text-left transition-colors ${
                       active
@@ -1599,12 +1600,12 @@ function StatusMenu({
 
   function toggle() {
     if (disabled) return
-    const rect = root.current?.getBoundingClientRect()
+    const rect = root.current && cssRect(root.current)
     if (!rect) return
     const height = options.length * 32 + 8 + 40
-    const top = rect.bottom + 4 + height > window.innerHeight ? Math.max(8, rect.top - 4 - height) : rect.bottom + 4
+    const top = rect.bottom + 4 + height > viewport().height ? Math.max(8, rect.top - 4 - height) : rect.bottom + 4
     const width = Math.max(rect.width, 176)
-    const left = Math.min(rect.left, window.innerWidth - width - 8)
+    const left = Math.min(rect.left, viewport().width - width - 8)
     setPlace({ top, left: Math.max(8, left), width })
     setOpen((current) => !current)
   }
@@ -1708,12 +1709,12 @@ function FolderMenu({
   }, [open])
 
   function toggle() {
-    const rect = root.current?.getBoundingClientRect()
+    const rect = root.current && cssRect(root.current)
     if (!rect) return
     const height = 248
-    const top = rect.bottom + 4 + height > window.innerHeight ? Math.max(8, rect.top - 4 - height) : rect.bottom + 4
+    const top = rect.bottom + 4 + height > viewport().height ? Math.max(8, rect.top - 4 - height) : rect.bottom + 4
     const width = Math.max(rect.width, 256)
-    const left = Math.min(rect.left, window.innerWidth - width - 8)
+    const left = Math.min(rect.left, viewport().width - width - 8)
     setPlace({ top, left: Math.max(8, left), width })
     setQuery('')
     setOpen((current) => !current)
