@@ -1,8 +1,10 @@
 # Contract Clean-Up — AI Principles & Flow Map
 
-Oct 30, 2026 · @Jinny Lee
+@Jinny Lee
 
 The assistant does the reading and proposes at every stage; nothing sticks until the user confirms it, and every explanation sits on the decision it explains.
+
+> **Updated after the build.** These principles were written before the prototype and still hold. What changed is the commitment model: each decision is applied when the user presses Apply on its card, and stays undoable there. Only renaming waits for the end, where **Accept changes** renames the files after a "Ready to apply" summary. The diagrams below are updated to match. Also not built: batch cards for easy wins, one "accept all" card for one-offs, correction cards, waiting on a person, compare, and pause and resume. The direct edit of any field in the table or side sheet *was* built.
 
 ## Autonomy: who acts, and when
 
@@ -10,13 +12,13 @@ The assistant does the reading and proposes at every stage; nothing sticks until
 
 | Level | The assistant… | Used when | Examples |
 | --- | --- | --- | --- |
-| **Acts, then tells** | Decides and plays it back as a batch card the user can undo | Sure, and a mistake is cheap or obvious | Formatting; unambiguous facts; single-file agreements; clean chains like Pinnacle's MSA |
+| **Acts, then tells** | Decides and plays it back as counts the user can check in the table and undo | Sure, and a mistake is cheap or obvious | Formatting; unambiguous facts; single-file agreements; clean chains like Pinnacle's MSA |
 | **Proposes a pattern** | Offers A or B with real examples and a recommended default | Sure of the pattern, but the choice is a policy | Copies and `(1)` files; employment files; orphan SOWs; folders that are instructions |
 | **Proposes a one-off** | Suggests an answer with its evidence; waits | Unsure, and a mistake would mislead retrieval | Acme's MSA with nothing labelled signed; self-contradicting filenames |
 | **Asks openly** | States what it can't tell and why; offers "leave open" | No reasonable default exists | Four landlords for one Leith property; files with no counterparty |
 | **Never** | Does not do it, even if asked in passing | Irreversible or beyond the evidence | Deleting; calling a file signed; merging look-alikes without asking; widening a correction's scope alone |
 
-The user always owns three things outright: **the convention, the Apply, and every undo**.
+The user always owns three things outright: **the convention, applying each decision, and every undo**.
 
 ## Explanation: where and how the assistant explains itself
 
@@ -24,11 +26,11 @@ The user always owns three things outright: **the convention, the Apply, and eve
 
 | Where | What it explains | Depth |
 | --- | --- | --- |
-| **Opening report** | What it found and how sure it is overall | Counts only: "191 agreements, 19 with several versions, 12 I can't identify" |
-| **Batch card** (easy wins) | The rule it applied and how many files it covered | One line + 3 example files; full list on expand |
+| **Opening report** | What it found and how sure it is overall | Counts only: "191 agreements, 19 with several versions, 12 I can't identify" (the build reports about 207 agreements and how the team files today) |
+| **Playback** (easy wins and every applied card) | The rule it applied and how many files it covered | One line per change with a count; "Show in table" highlights the rows |
 | **Pattern question** | Why this is a choice, and why it recommends one option | Real examples for each option; the recommendation's reason in one sentence |
 | **One-off card** | The evidence for and against, per file | Filename, excerpt and folder side by side, with the conflict highlighted |
-| **Preview and register** | Why each file is where it is | Hover or click a file: the decision card that put it there |
+| **Register and side sheet** | Why each file is where it is | Click a row: its side sheet shows the original path, the excerpt and a note on why it's there, all editable |
 | **Correction and undo cards** | What else the change affects | "Reopens 30 files · changes 2 later decisions" |
 | **Retrieval answer** | Which file is in force, and why | The in-force file, the versions it beat, and any caveat |
 
@@ -51,7 +53,7 @@ Rules for explaining:
 | One-offs | **Control:** accept all, or accept with exceptions | Many small yeses in one gesture |
 | Corrections | Words or a direct edit, then **control:** "Apply correction" | The assistant checks the impact first; the user confirms the exact scope |
 | Undo | **Control** on the card | One right answer; nothing to interpret |
-| Apply | **Control:** one Apply after the full playback | The only moment real files change |
+| Apply | **Control:** Apply on each card, then Accept changes at the end for renaming | Each decision changes the repository as it's made; names change once, last |
 
 Rules for confirming:
 
@@ -85,11 +87,11 @@ The happy path runs down the middle. Checks and fixes on the left always return 
 ```mermaid
 flowchart TB
     subgraph HAPPY["Happy path"]
-        S1["1 Read and report<br/>191 agreements, 12 unknown"] --> S2["2 Agree the convention<br/>Pick and order facets, confirm"]
-        S2 --> S3["3 Easy wins played back<br/>Batch cards, undo on each"]
+        S1["1 Read and report<br/>About 207 agreements"] --> S2["2 Agree the structure<br/>Top level, then second level"]
+        S2 --> S3["3 Easy wins played back<br/>Counts, undo on each card"]
         S3 --> S4["4 Pattern questions<br/>About 7, each with a default"]
         S4 --> S5["5 One-offs<br/>Evidence and a suggestion"]
-        S5 --> S6["6 Playback, then Apply<br/>First time files change"]
+        S5 --> S6["6 File names, then Accept changes<br/>Renames every file"]
         S6 --> S7["7 Retrieval test<br/>Ask for any agreement"]
         S7 --> END["Source of truth<br/>Used by people and the AI"]
     end
@@ -129,7 +131,7 @@ flowchart TB
     S6 --> F6
     S7 --> F7
 
-    PAUSED["Paused, nothing lost<br/>Waiting items show who<br/>No files change until Apply"]
+    PAUSED["Paused, nothing lost<br/>Waiting items show who<br/>Applied cards stay undoable"]
     BACK["Back in: summary first<br/>Where you are, what's waiting<br/>Flags files changed meanwhile"]
     F4 --> PAUSED
     F5 --> PAUSED
@@ -145,7 +147,7 @@ flowchart TB
 
 ## Flow map
 
-The assistant starts almost every exchange with a proposal, and only two moments are hard commitments: confirming the convention and pressing Apply. Corrections and undo loop back through an impact check at any stage before Apply.
+The assistant starts almost every exchange with a proposal. Every decision is a commitment the user makes with a control, Apply on its card, and each one stays undoable. Renaming is the last commitment: Accept changes. *(Updated to the build; the original map had one Apply at the end.)*
 
 ```mermaid
 sequenceDiagram
@@ -153,30 +155,27 @@ sequenceDiagram
     participant A as Assistant
     Note over U,A: 1 Read
     U->>A: Shares the repository (220 files, 23 folders)
-    A-->>U: Reports: 191 agreements, 19 chains, 12 unknown
-    Note over U,A: 2 Convention
-    A->>U: Proposes 1 to 3 conventions on 3 real files
-    U->>A: Picks and orders facets, fine-tunes in words
-    U->>A: [Control] Use this convention
+    A-->>U: Reports: about 207 agreements, 28 counterparties, how the team files today
+    Note over U,A: 2 Structure
+    A->>U: Top level, then second level, each with a recommendation and a hover preview
+    U->>A: [Control] Apply (folders redraw)
     Note over U,A: 3 Easy wins
-    A->>U: Decides ~150 files, plays back as batch cards
-    U-->>A: Spot-checks, undo on any card
+    A-->>U: Single-file agreements and labelled-signed chains settle as the structure lands, played back as counts
     Note over U,A: 4 Patterns
-    A->>U: ~7 A/B questions, each with a default
-    U->>A: Picks A or B, one answer settles the group
+    A->>U: Dates, templates, what counts as current, unsigned chains, employment, missing status
+    U->>A: [Control] Apply an option; one answer settles the group
     Note over U,A: 5 One-offs
-    A->>U: 5 to 8 cases with evidence, one card
-    U->>A: Accept all, or accept with exceptions
-    Note over U,A: 6 Apply
-    A->>U: Plays back the outcome: resolved, resolved by you, open
-    U->>A: [Control] Apply (first time real files change)
+    A->>U: Solara, Vantage, unidentified files, contradictory names: one card each, with evidence
+    U->>A: [Control] Apply, or Skip
+    Note over U,A: 6 Names
+    A->>U: File-name pattern, then "Ready to apply": everything that has happened
+    U->>A: [Control] Accept changes (files renamed)
     Note over U,A: 7 Test
     U->>A: "Show me the Pinnacle MSA"
     A-->>U: In-force file, with a caveat if open
-    Note over U,A: Any stage before Apply
-    U->>A: Corrects (edit a fact or say it) or presses undo
-    A-->>U: Checks the impact, shows a scoped card, offers to generalise once
-    U->>A: [Control] Apply correction
+    Note over U,A: Any stage
+    U->>A: Presses Undo changes on a card, or edits a field in the table or side sheet
+    A-->>U: The register updates; nothing is deleted
 ```
 
 ## Detours: checking before deciding
@@ -214,7 +213,7 @@ Rules for detours:
 
 ## Failure points and recovery
 
-**Every failure ends in a saved, visible state the user can return to, never a dead end or a half-applied repository.**
+**Every failure ends in a saved, visible state the user can return to, never a dead end.** Because decisions apply as they're made, stopping mid-way leaves the repository partly organised, but every applied card can still be undone.
 
 | Stage | What goes wrong | What happens |
 | --- | --- | --- |
@@ -223,20 +222,20 @@ Rules for detours:
 | 3 Easy wins | A batch looks wrong: the rule caught the wrong files | Undo or correct the card; impact is checked before it lands |
 | 4 Patterns | You need to ask someone: a policy call that isn't yours to make | Mark it waiting on a person; the assistant drafts the question → **Paused** |
 | 5 One-offs | You can't verify a case: need the signed copy or a colleague | Leave it open or waiting; its files stay untouched → **Paused** |
-| 6 Apply | Items still open or waiting, and you don't want to wait | Apply everything else; open items keep their current place |
-| 6 Apply | A file fails to move: locked, name taken or no access | Listed on the Apply summary; retry; each file moves or doesn't |
+| 6 Accept changes | Items still open, skipped or waiting, and you don't want to wait | Accept everything else; open items keep their current place |
+| Any Apply | A file fails to move or rename: locked, name taken or no access | Listed on the card or the Apply summary; retry; each file moves or doesn't |
 | 7 Test | The wrong document comes back | Correct the fact; only affected files are re-applied |
 | Any time | You have to stop mid-way | Progress is already saved: every decision is already a card → **Paused** |
 
-**Paused, nothing lost:** waiting items show who and what; no files change until Apply. **Back in:** a summary of where you are and what's still waiting, a flag on files changed since you left, then the flow rejoins the stage you left.
+**Paused, nothing lost:** waiting items show who and what; applied decisions stay in place and stay undoable. **Back in:** a summary of where you are and what's still waiting, a flag on files changed since you left, then the flow rejoins the stage you left.
 
 Three rules make this work:
 
 - **Progress is the decision log.** Every answer is already a card, so stopping loses nothing and there's no separate "save".
 - **"Waiting on a person" is a fourth state,** next to resolved, resolved by you and open. It records who and what, and the assistant drafts the question with the evidence attached; the user sends it themselves.
-- **Nothing waiting blocks the rest.** Apply moves everything that's decided; open and waiting items keep their current place until they're resolved.
+- **Nothing waiting blocks the rest.** Each decision applies on its own; open, skipped and waiting items keep their current place until they're resolved.
 
-The prototype still assumes one sitting. The paused path is design intent, shown as one mocked moment at most.
+The prototype still assumes one sitting. The paused path is design intent and isn't built; Skip on each card is the only part of it in the prototype.
 
 ### More failure points to design for
 
@@ -257,10 +256,10 @@ Beyond the stage-by-stage failures above, the riskier ones are quiet: the model 
 | **User** | Question fatigue | Questions keep coming after decision 10 | A visible count ("3 of 7 patterns"); the assistant offers to leave the rest open |
 | **People** | The colleague never replies | A "waiting on" question unanswered for weeks | Stays waiting, with its age shown; files untouched; a reminder on resume |
 | **People** | Two people clean up at once | A colleague starts a second session on the same repository | One active clean-up per repository; the second person joins or waits |
-| **Environment** | The repository changes during the session | Someone adds or renames a file | Rescan before Apply and on resume; affected cards are flagged |
+| **Environment** | The repository changes during the session | Someone adds or renames a file | Rescan before each Apply and on resume; affected cards are flagged |
 | **Environment** | Folders the user can't see | No access to the HR folder | Reported as "not visible to you", never as "missing" |
 | **Environment** | Files under a legal hold or retention rule | A file in active litigation | Held files are never moved; shown as locked, with the reason |
-| **After Apply** | Links to old paths break | Emails, the CRM or other documents link to the old location | Old-to-new map kept; redirects or shortcuts where the system supports them |
-| **After Apply** | Undo after people have started using the new structure | Undoing a batch a week later | The undo card shows what has happened since ("12 files opened since Apply") before it runs |
-| **After Apply** | The AI still answers from the old index | Retrieval returns an old path | Re-index straight after Apply; the retrieval test runs on the new index |
-| **After Apply** | A signed copy turns up later | Someone finds the executed Acme MSA in their inbox | Adding it to the agreement supersedes the "assumed" version, with a card to confirm |
+| **After the run** | Links to old paths break | Emails, the CRM or other documents link to the old location | Old-to-new map kept; redirects or shortcuts where the system supports them |
+| **After the run** | Undo after people have started using the new structure | Undoing a batch a week later | The undo card shows what has happened since ("12 files opened since Apply") before it runs |
+| **After the run** | The AI still answers from the old index | Retrieval returns an old path | Re-index straight after Apply; the retrieval test runs on the new index |
+| **After the run** | A signed copy turns up later | Someone finds the executed Acme MSA in their inbox | Adding it to the agreement supersedes the "assumed" version, with a card to confirm |

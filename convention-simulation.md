@@ -1,6 +1,6 @@
 # Convention Step — Simulated on the Dataset
 
-Nov 1, 2026 · @Jinny Lee
+@Jinny Lee
 
 A run-through of step 2, "Agree the convention", on the real 220 files. The facts come from [convention-sim.py](convention-sim.py), a heuristic stand-in for the model's extraction. Its counts match the [Data Audit](data-audit.md): 12 files can't be tied to a counterparty, and 10 are recovered from the excerpt.
 

@@ -4,6 +4,12 @@ Every screen, card and state that needs designing, with the job each one does. U
 
 Mockups so far: [canvas](https://claude.ai/artifact/DVEZ4AVoHAdqs6P2Mpb9BH) (Main = S3 + S4; Detour = S6 + S7).
 
+> **After the build.** This checklist was written before the prototype. In the build, each decision card is applied as it's answered, and only renaming waits for the end, so the playback and Apply cards (S9, S10, C10, C11) now close the flow rather than being the first time anything changes.
+>
+> - **Built:** S1, S2 (as two cards: top level, then second level), S3, S4, S6 (ask from any row), S10, S11; C1, C2, C4 (one card per pattern, with Skip), C10, C11 (with Undo run), C12; the file side sheet with every field editable; per-card undo.
+> - **Changed:** easy wins (C3) land as counts in the chat after each applied card rather than as batch cards; one-offs (C5) are one card each rather than one card with "accept all"; the file-name pattern is its own card at the end.
+> - **Not built:** S5 as a separate view (the side sheet's Open stands in), S7 compare, S12 and C13 resume, S13 folder tree toggle, S14 and C14 new files, C6 correction cards, C7 undo impact, C9 waiting on a person, export, the decision history and the facet bar.
+
 ## Screens
 
 Each screen is a state of one workspace: the chat on the left and a view on the right. Only the view changes.
@@ -19,7 +25,7 @@ Each screen is a state of one workspace: the chat on the left and a view on the 
 | S6 | **Detour: ask** | When the details don't answer my question, I want to ask about the document, so I can decide without opening every file | Any | Yes (Detour) |
 | S7 | **Detour: compare** | When versions look alike, I want to see what differs, so I can choose the right one | 4–5 | Yes (Detour) |
 | S8 | **One-offs review** | When a handful of cases need me, I want them in one place with evidence and suggestions, so I can clear them quickly | 5 | No |
-| S9 | **Playback** (old-to-new flow + change list + state counts) | Before anything changes, I want to see the whole outcome, so I can apply with confidence | 6 | No |
+| S9 | **Playback** (old-to-new flow + change list + state counts) | Before the files are renamed, I want to see everything that has happened, so I can accept it with confidence | 6 | No |
 | S10 | **Apply summary** | After applying, I want to know what moved, what failed and how to undo, so nothing is a surprise | 6 | No |
 | S11 | **Retrieval test** | When it's done, I want to ask for any agreement and get the right file, so I know the source of truth works | 7 | No |
 | S12 | **Paused / resume summary** | When I come back, I want to know where I was and what's still waiting, so I can pick up without re-reading | Any | No |
@@ -34,15 +40,15 @@ Every card has a header (kind + scope), a body (what and why) and controls. Word
 | --- | --- | --- | --- | --- |
 | C1 | **Opening report** | What was found; counts and unknowns | Reading (progress) · Complete · Partial (some files unreadable) | Start |
 | C2 | **Convention** | Proposed organisation | Proposed (1–3 options) · Adjusting (facets reordered, examples redraw) · Warning (e.g. a facet missing for many files) · Confirmed · Undone · Replaced by a new version | Pick option, reorder facets, Use this convention, Undo |
-| C3 | **Easy win (batch)** | Decisions the assistant made, played back | Applied to preview · Expanded (file list) · Spot-check sample shown · Undone · Partly overridden by a correction | Show files, Show in register, Undo |
+| C3 | **Easy win (batch)** | Decisions the assistant made, played back | Applied · Expanded (file list) · Spot-check sample shown · Undone · Partly overridden by a correction | Show files, Show in register, Undo |
 | C4 | **Pattern question** | One policy choice across a group | Active (A/B + default) · Answered · Left open · Waiting on a person · Undone · Overridden | A, B, Leave open, Waiting on a person, Confirm, Undo |
 | C5 | **One-offs** | A few specific cases, each with evidence | Active (n cases) · Partly accepted · All accepted · A case waiting · High-risk case (can't be bulk-accepted) | Accept all, Accept all except…, per-case choice, Undo |
 | C6 | **Correction** | A change the user asked for, scoped | Proposed with impact · Adjusting scope · Applied · Offer to generalise ("4 others match") · Undone | Apply correction, Adjust scope, Apply to similar, Undo |
-| C7 | **Undo confirmation** | What an undo affects | Self-contained (instant, no card) · Affects other decisions (confirm) · After Apply (shows what happened since) | Undo, Cancel |
+| C7 | **Undo confirmation** | What an undo affects | Self-contained (instant, no card) · Affects other decisions (confirm) · After Accept changes (shows what happened since) | Undo, Cancel |
 | C8 | **Detour answer** | A read-only answer about documents | Answered with source · Can't answer (says why) · Attached to a card as evidence · New fact found (offers a correction) | Attach to card, Ask a colleague, Back to decision |
 | C9 | **Waiting on a person** | A question for someone else | Drafted (with evidence) · Marked as sent · Answered · Ageing (shows how long) | Copy question, Mark sent, Record answer |
-| C10 | **Playback** | The whole outcome before Apply | Ready · Ready with open or waiting items (never blocks) | Review changes, Apply |
-| C11 | **Apply summary** | What changed | Applying (progress) · Done · Partial (some files failed) · Retrying · Undone (run, batch or file) | Retry, Undo run, Undo batch, Export plan, Export register |
+| C10 | **Playback** ("Ready to apply") | Everything that has happened, before files are renamed | Ready · Ready with open or waiting items (never blocks) | Edit, Accept changes |
+| C11 | **Apply summary** | What changed, once files are renamed | Applying (progress) · Done · Partial (some files failed) · Retrying · Undone (run, batch or file) | Retry, Undo run, Undo batch, Export plan, Export register |
 | C12 | **Retrieval answer** | The in-force file for a request | Resolved · Assumed (caveat) · Open (caveat) · Wrong (user corrects the fact) | Open file, Correct, Show versions |
 | C13 | **Resume summary** | Where the user left off | Nothing changed · Files changed since (flagged) · Answers came in | Continue |
 | C14 | **New file filed** | Ongoing filing after the clean-up | Filed automatically · Needs a question · Joins an existing agreement (supersedes) | Undo, Answer |

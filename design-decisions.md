@@ -1,27 +1,30 @@
 # Contract Clean-Up — Design Decisions
 
-Oct 30, 2026 · @Jinny Lee
+@Jinny Lee
 
-The assistant builds a trusted source of truth: it decides the obvious, asks about patterns, proposes the one-offs, and changes nothing until the user has seen the result.
+The assistant builds a trusted source of truth: it decides the obvious, asks about patterns, proposes the one-offs, and shows every change as it lands, with an undo on each.
+
+> **Revised during the build.** This log was written before the prototype. Where the build changed a decision, the section says so and keeps the original reasoning, so the change is visible. The main revision is Tension 1: decisions now apply as you go, and only renaming waits for the end.
 
 ## Tension 1: immediate verification vs. speed
 
-**Decision: verify incrementally on a live preview, then execute once.** Checking a decision and changing files are separate steps, so the user gets immediate feedback without bulk changes landing mid-conversation.
+**Decision (revised): apply each decision as it's made, with an undo on every card; rename last.** The original decision was a live preview and one Apply at the end. In the build, a separate preview meant the user checked everything twice, once on the preview and again at Apply. An undo on every card already makes each step reversible, so applying as you go gives the same safety with real feedback.
 
 | Option | Verification | Speed and effort | Risk |
 | --- | --- | --- | --- |
 | Apply everything once, at the end | Late: the outcome is seen only after the files change | Fast, one click | Errors are found after they've landed |
-| Apply batch by batch as approved | Immediate, on the real repository | Slow: every approval becomes a high-stakes moment | Partial states if the user stops halfway |
-| **Live preview, one Apply (chosen)** | **Immediate, on a preview of the result** | **No extra clicks: the preview updates as a side effect of answers already given** | **Judgement errors show before Apply; only mechanical ones can appear after** |
+| **Apply decision by decision (chosen in the build)** | **Immediate, on the real repository** | **One click per decision, which the user was making anyway** | **Partial states if the user stops halfway; undo on every card keeps each step reversible** |
+| Live preview, one Apply (original choice) | Immediate, on a preview of the result | No extra clicks, but the outcome is checked twice | Judgement errors show before Apply; only mechanical ones can appear after |
 
-How it plays out:
+How it plays out in the build:
 
-1. Every decision, whether made by the model or the user, updates the preview tree and the register in the next message.
-2. Nothing touches a file until one **Apply** at the end, after a playback of the whole outcome.
-3. Apply only renames, moves and archives. It never deletes, logs every original path, and can be undone for the whole run or one batch.
-4. After Apply, the assistant invites a **retrieval test** ("Ask me for any agreement") to check the goal was met, not just the folders.
+1. Each decision card has its own **Apply**. Pressing it updates the folders, statuses and versions in the register straight away, and the chat plays back what changed.
+2. Every applied card keeps **Undo changes**, so any decision can be reversed later.
+3. **Renaming is the last decision,** because names are the most visible change and depend on every fact before them. A "Ready to apply" card lists everything that has happened, and **Accept changes** renames the files.
+4. Nothing is ever deleted. Every original path is logged, and the whole run can be undone after Accept changes.
+5. Afterwards, the assistant invites a **retrieval test** ("Ask me for any agreement") to check the goal was met, not just the folders.
 
-*Risk to watch:* some teams may only trust the real system. If the preview doesn't look like their document management system, it may not count as verification for them.
+*Risk to watch:* applying as you go leaves a half-organised repository if the user stops mid-way. That's acceptable for one sitting; the paused state (see AI principles) is what would make it safe at scale.
 
 ## Tension 2: involvement vs. interrogation
 
@@ -35,6 +38,8 @@ How it plays out:
 
 Why patterns, not files: one pattern answer ("keep employment files separate and flag the personal data") settles 30 files at once, and the user's attention goes to decisions only a lawyer can make.
 
+*In the build:* the tiers held, at roughly 65% easy wins, 25% patterns and 10% one-offs of the 220 files, across 13–14 decisions. Two things changed. Easy wins aren't a separate batch card: they land as a side effect of the structure answers. And each one-off gets its own card rather than one "accept all" card, because each needs its own evidence.
+
 ## Tension 3: going back without misinterpretation
 
 **Principle (decided): chat for intent, controls for exact operations.** Undoing a change has one right answer, so it's a control on the thing being undone, not a request the model has to interpret. Language stays for judgement calls ("leave the employment ones where they are"), where interpreting is the point.
@@ -47,6 +52,8 @@ What's decided:
 - **Typed requests are a fallback, never the main way.** If the user types "go back on Acme", the assistant points to the matching card and waits for a click. It never acts on its own reading of the request.
 - **Changing the convention is not an undo.** It's a new version of the view, shown with how many files would move.
 - **After Apply:** undo the whole run, one batch or one file from the Apply summary. A failed retrieval test is fixed by correcting the fact, which flows through to the plan.
+
+*In the build:* each card has Undo changes, and the run has Undo run after Accept changes. Undo per batch or per file after the run, and the history panel, weren't built.
 
 The interface isn't decided yet:
 
@@ -70,6 +77,8 @@ The interface isn't decided yet:
 5. **Confirm with a control** ("Use this convention"). The convention becomes a decision card, undoable like any other.
 
 *Watch-out:* status as a folder level means a file moves whenever its status changes (draft → signed). The assistant should point this out when status is picked as a folder level, not as part of the filename.
+
+*In the build:* the convention became two short questions instead of a facet picker. First the top level (counterparty, type or status, with counterparty recommended), then the second level. Hovering an option previews its folders on the user's own files. The file-name pattern is a separate question at the very end ("Counterparty – Type – date" recommended, or keep today's names). Fine-tuning the convention by talking wasn't built.
 
 **Default recommendation: counterparty → type, with employment kept separate.** The assistant leads with this convention and the user can still pick another or reorder the facets. It matches the question the product answers ("what did we sign with X?"), keeps an SOW next to the MSA that governs it, and makes gaps visible (e.g. Greymoor's SOWs with no MSA). Both orders give two folder levels; counterparty first gives 30 top folders instead of 10. Employment files go to one Employment folder flagged to HR, because the company in their filename is probably not who signed. Costs to name in the conversation: it's a new habit (no folder is named after a counterparty today), and it splits the 5 Harbour View, Leith leases across four landlords, so the register and the one-off card must surface that clash. Simulated on the data in [convention-simulation.md](convention-simulation.md).
 
@@ -96,6 +105,8 @@ How it works:
 
 In the sample data: 19 chains (48 files) become 19 current files and 29 archived, plus the copies and `(1)` duplicates that the patterns step resolves.
 
+*In the build:* versions are linked only when the type and the excerpt match, so the prototype finds 10 chains, not 19, and archives 13 files. The others stay separate agreements, because merging two live agreements is worse than leaving two versions apart. That gives about 207 agreements rather than the audit's 191.
+
 *Watch-out:* "latest" isn't always "current". Solara's NDAs: one labelled signed (Oct 2020), then an unlabelled one (Jul 2022) and one pending signature (Apr 2025). The latest-dated file isn't in force yet, and it may be a new NDA rather than a version. The model never chooses the current file by date alone when a signed label exists, and it checks the subject before treating later files as versions (Tandem's later SOWs cover different projects).
 
 ## Corrections mid-conversation
@@ -118,9 +129,11 @@ How it works:
 5. **The most specific decision wins** when decisions conflict, and the card says which one it overrides.
 6. **Corrections made mid-batch:** the assistant pauses, confirms the correction, re-checks what it had queued, and reports it ("That changes 3 proposals I'd queued. Updated.").
 
+*In the build:* only the direct edit was built. Every field the model fills in (status, date, version, notes) can be edited in the table or in a file's side sheet, so the user can override any decision. Corrections said in chat, the impact check, correction cards and the offer to generalise weren't built.
+
 ## Decision log
 
-Sixteen decisions so far. Each one names the alternative it rules out.
+Sixteen decisions so far. Each one names the alternative it rules out. Rows marked *(revised in the build)* or *(partly built)* say what changed.
 
 | # | Decision | Why | Rejected alternative |
 | --- | --- | --- | --- |
@@ -131,13 +144,13 @@ Sixteen decisions so far. Each one names the alternative it rules out.
 | 5 | **The convention layer stays,** logical to a person | People need to navigate and verify for themselves | "Never show a structure" (AI register only) |
 | 6 | **Organisation is never silent.** The user confirms the convention and sense-checks the result | Trust comes from taking part, not from the model sounding confident | Fully automatic clean-up |
 | 7 | **Three tiers:** easy wins played back, patterns as A/B options, one-offs proposed directly | Keeps involvement to about 12–15 questions, not 220 | Reviewing file by file, or one long question queue |
-| 8 | **Preview while deciding, one Apply, then a retrieval test** | Immediate verification without changing files mid-conversation | Apply at the end with no preview; apply batch by batch |
+| 8 | **Apply each decision as it's made, rename last, then a retrieval test** *(revised in the build; originally "preview while deciding, one Apply")* | Real feedback on every answer; undo on each card keeps it reversible; checking once instead of twice | Apply at the end with no preview; a separate preview with one Apply |
 | 9 | **Non-destructive:** never delete; superseded versions archived; every change logged and undoable | Legal teams are wary of bulk changes to real documents | Removing duplicates |
 | 10 | **Evidence-based language:** "labelled signed", never "signed". When nothing is labelled signed, propose the latest FINAL as **assumed** | Nothing in the data proves execution; a default answer is faster than an open question | Stating a status the evidence can't support, or leaving every such chain open |
 | 11 | **Chat for intent, controls for exact operations.** Undo is a control on each decision, with its effects shown first | An exact action has one right answer; interpreting it invites error | Undo by typing a request; undo by stepping back through the conversation |
-| 12 | **The assistant proposes conventions; the user picks and orders the facets** | People react to examples better than they describe schemes; the data shows four competing principles | The user writing a scheme from scratch; the model choosing one convention for them |
-| 13 | **Corrections: edit directly or say it; the assistant checks the impact, scopes it on a card, and offers to generalise once** | Direct edits can't be misread; checking the impact stops quiet side effects; offering to generalise saves repeat fixes without assuming | Corrections applied silently; the model widening the scope on its own; chat-only corrections |
-| 14 | **Detours: preview, ask or compare from any card; questions are read-only and the card waits, pinned** | Deciding often needs a look first; a detour must never cost the user their place or change anything quietly | Forcing decisions from metadata alone; questions that silently update facts |
+| 12 | **The assistant proposes conventions; the user picks and orders the facets** *(revised in the build: a top level, then a second level, each with a recommendation)* | People react to examples better than they describe schemes; the data shows four competing principles | The user writing a scheme from scratch; the model choosing one convention for them |
+| 13 | **Corrections: edit directly or say it; the assistant checks the impact, scopes it on a card, and offers to generalise once** *(partly built: direct edits only)* | Direct edits can't be misread; checking the impact stops quiet side effects; offering to generalise saves repeat fixes without assuming | Corrections applied silently; the model widening the scope on its own; chat-only corrections |
+| 14 | **Detours: preview, ask or compare from any card; questions are read-only and the card waits, pinned** *(partly built: open a file or ask about it from any row; compare wasn't built)* | Deciding often needs a look first; a detour must never cost the user their place or change anything quietly | Forcing decisions from metadata alone; questions that silently update facts |
 | 15 | **Counterparty → type is the recommended default convention,** with employment as its own folder; the user can still choose | Matches "what did we sign with X?", keeps SOWs with their MSAs and shows gaps; employment counterparties are people, not companies | Type first as the default; no default, leaving the user to choose cold |
 | 16 | **Every file has a version role: current, current (assumed), archived or open,** stored in the register and mirrored by an `_Archive` folder | Agents and people need one unambiguous file to reference; filenames already contradict themselves | Status words in filenames as the marker; the latest date wins automatically; deleting old versions |
 
@@ -147,11 +160,11 @@ Scope decision for the prototype: the user completes the flow **in one sitting**
 
 The undo principle is set (Tension 3); its exact interface is the biggest open question.
 
-- **Graceful fallbacks: "I made a change and I don't think it worked."** Partly decided in Tension 3: the unit is a decision and undo is a control, not a request. Still open: card undo, history panel or both, across three moments:
-  - Before Apply: reversing a decision in conversation, including one that later decisions built on.
+- **Graceful fallbacks: "I made a change and I don't think it worked."** Partly decided in Tension 3: the unit is a decision and undo is a control, not a request. The build has card undo and Undo run. Still open: a history panel, and three moments:
+  - During the flow: reversing a decision that later decisions built on.
   - Changing the convention after confirming it.
-  - After Apply: undoing the whole run, one batch, or one file, and finding out from a failed retrieval test that something is wrong.
+  - After Accept changes: undoing one batch or one file rather than the whole run, and finding out from a failed retrieval test that something is wrong.
 - **Answering later, and pausing to check elsewhere.** Would a user stop mid-flow to ask a colleague (e.g. on Slack) or check another system? If so, can open items be resolved later, for example when someone asks for that document? Out of scope for the prototype (one sitting), but part of the story.
 - **Who proposes the convention first:** decided (see Setting the convention): the assistant proposes, the user picks and orders the facets.
 - **Corrections mid-conversation:** decided (see Corrections mid-conversation).
-- **Build approach (proposed, not discussed):** run the extraction over all 220 files once ahead of time for a fast, repeatable demo, and use the model live only for the conversation.
+- **Build approach (done):** run the extraction over all 220 files once ahead of time for a fast, repeatable demo, and use the model live only for the conversation.

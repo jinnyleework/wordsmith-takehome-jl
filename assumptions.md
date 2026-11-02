@@ -35,5 +35,5 @@ Every assumption the design rests on, in one place. If one turns out wrong, the 
 | # | Assumption | Why | Depends on it |
 | --- | --- | --- | --- |
 | A14 | **Extraction runs ahead of time** over all 220 files; the model is live only for the conversation. | Fast, repeatable demo | Demo reliability |
-| A15 | **Apply is simulated.** It produces the new structure, the change plan and the register. | No real files to move | Stage 6 |
+| A15 | **Apply is simulated.** Each card's Apply updates the structure and the register as it's made; Accept changes renames the files at the end. (Exporting the change plan wasn't built.) | No real files to move | Every decision card; the final Accept changes |
 | A16 | **Detours run on excerpts and file details,** not full documents. | Only excerpts are provided | Ask and compare |

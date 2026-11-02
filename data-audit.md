@@ -1,6 +1,6 @@
 # Contract Repository — Data Audit
 
-Oct 30, 2026 · @Jinny Lee
+@Jinny Lee
 
 ## Summary
 

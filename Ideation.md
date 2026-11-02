@@ -1,6 +1,6 @@
 # Ideation
 
-Oct 30, 2026 · @Jinny Lee
+@Jinny Lee
 
 The organisation is best shown as agreements grouped by the user's chosen facets, not as a folder tree; this page lays out the options behind that view.
 

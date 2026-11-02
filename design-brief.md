@@ -1,6 +1,6 @@
 # Contract Clean-Up Assistant — Design Brief
 
-Oct 30, 2026 · @Jinny Lee
+@Jinny Lee
 
 ## Problem and context
 
@@ -11,6 +11,8 @@ Oct 30, 2026 · @Jinny Lee
 - **Why now:** Wordsmith's assistant reads the repository. A messy repository doesn't just slow people down; it makes the AI give wrong answers with confidence.
 
 See the [Data Audit](data-audit.md) for the evidence and the [Design Decisions](design-decisions.md) log for the reasoning behind this brief.
+
+> **Updated after the build.** This brief was written before the prototype; it's kept as the plan, with notes where the build differs. The main change: each decision applies as it's made, with an undo on its card, and only renaming waits for the end. Counts from the audit (191 agreements, 19 chains, 12 unidentified) came out as about 207 agreements, 10 chains and 10 unidentified in the build, because it links versions cautiously.
 
 ## How might we
 
@@ -36,14 +38,14 @@ The primary user runs the clean-up, but the result serves two readers: people br
 
 ## Principles and the human/AI line
 
-**The model does the reading and proposes; the human decides anything that needs a lawyer; nothing changes without being shown first.**
+**The model does the reading and proposes; the human decides anything that needs a lawyer; nothing changes without the user's say, and every change can be undone.**
 
 1. **A source of truth, not just tidiness.** Success means the right document gets retrieved.
 2. **Facts are fixed; the convention is yours.** The model extracts what each file is; the user decides how it's named and filed.
 3. **Never silent.** Every automatic decision is played back in the conversation.
 4. **Confirm patterns, not files.** One answer settles a whole group.
 5. **Say only what the evidence supports.** "Labelled signed", never "signed"; "assumed" when the model fills a gap.
-6. **Preview first, apply once, then test.** Check each decision on a preview; change files once; finish with a retrieval test.
+6. **Apply as you go, rename last, then test.** Each decision changes the repository when the user applies its card, and can be undone; renaming comes at the end; finish with a retrieval test. *(Revised in the build; originally "preview first, apply once".)*
 7. **Chat for intent, controls for exact operations.** Judgement happens in language; undo and approval are controls with one meaning.
 8. **Never delete.** Superseded files are archived, and every change is logged and reversible.
 
@@ -52,12 +54,14 @@ The primary user runs the clean-up, but the result serves two readers: people br
 | **Model decides, then plays it back** | Formatting, unambiguous facts, single-file agreements, clean version chains | Pinnacle MSA: the labelled-signed version is in force; the other three are superseded |
 | **Model proposes A or B, human picks** | Recurring patterns (about 7) | "Treat copies and `(1)` files as duplicates of their twin?" |
 | **Human decides, model suggests a default** | One-offs (about 5–8) and chains with no signed version | Acme MSA: "I'd treat the 2019 FINAL(2) as in force, though its name also says 'draft not final'" |
-| **Human only** | Which convention, and which facets in what order; the final Apply; every undo | "Group by counterparty, then type" |
+| **Human only** | Which convention and file-name pattern; applying each decision; every undo; any edit to a field | "Group by counterparty, then type" |
 | **Never** | Deleting files; claiming a signature the data can't prove; merging look-alikes without asking | Vantage's 5 partnerships stay separate |
 
 ## Scope
 
-**The prototype covers one sitting, from "here's my repository" to an applied, tested source of truth.** The chat runs the flow; a live preview of the folder tree and the register of agreements sits beside it.
+**The prototype covers one sitting, from "here's my repository" to an applied, tested source of truth.** The chat runs the flow; the folder tree and the register of agreements sit beside it and update as each decision is applied.
+
+*As planned* (the build's flow is summarised after the list):
 
 1. **Read and report.** The assistant summarises what it found in plain language: "220 files, about 191 agreements, 19 with several versions, 12 I can't identify."
 2. **Agree the convention.** The assistant shows how the team has filed so far, then proposes one to three conventions, each shown on 3 of the user's real files, leading with counterparty → type (employment kept separate) as the recommended default. The user picks the facets that matter and orders them (e.g. type, then status, then year), fine-tunes by talking, and confirms with a button. The preview redraws at each step.
@@ -67,11 +71,13 @@ The primary user runs the clean-up, but the result serves two readers: people br
 6. **Play back the outcome and apply.** Resolved, resolved by you, open; a before/after tree; one Apply.
 7. **Test it.** "Ask me for any agreement." The answer is the in-force file, with caveats where the agreement is open.
 
+*As built:* read and report; top level and second level of folders; which date to use; templates; what counts as current; then one card each for unsigned version chains, employment, Solara, Vantage, unidentified files, contradictory names and missing status; then the file-name pattern. Each card is applied as it's answered. A "Ready to apply" card lists everything that has happened, **Accept changes** renames the files, and the retrieval test follows. That's 13–14 decisions.
+
 | In scope for the time-box | Out of scope (say what's next) |
 | --- | --- |
 | Extraction run ahead of time over all 220 files; the model live only for the conversation | Real document-system integration and file writes |
-| Chat feed with decision cards (undo on each) and the live preview | Pausing to check with colleagues (e.g. Slack); answering open items later, when someone asks for that document |
-| Simulated Apply with undo; export of the change plan (CSV) and the register | Multiple users, permissions, approval routing |
+| Chat feed with decision cards (undo on each) and the live register | Pausing to check with colleagues (e.g. Slack); answering open items later, when someone asks for that document |
+| Simulated Apply with undo *(export of the change plan and register wasn't built)* | Multiple users, permissions, approval routing |
 | The six demo cases from the audit (Pinnacle, Acme, Vantage, Harbourline employment, Leith lease, unidentified MNDA) | Reading full documents; confirming signatures from a signing platform |
 
 ## Requirements and success criteria
@@ -83,16 +89,16 @@ Must have:
 - Every file gets an action (rename, move, archive, flag, leave) with a reason, a confidence level and who decided.
 - Every agreement gets a state: resolved, resolved by you, or open with the gap stated.
 - Every extracted fact shows its evidence (filename, excerpt or folder).
-- The convention is set and changed in conversation, and the preview updates in the next message.
-- Every decision is a card with an undo control that shows what else it changes first. Corrections, typed or edited directly, become cards too, after the assistant checks their impact.
+- The convention is set and changed in conversation, and the register updates in the next message.
+- Every decision is a card with an undo control that shows what else it changes first. Corrections, typed or edited directly, become cards too, after the assistant checks their impact. *(Built: undo on every card, and direct edits to any field. Not built: impact shown before undo, correction cards.)*
 - Nothing is deleted. Apply is simulated, logged and reversible.
-- The change plan and the register can be exported.
+- The change plan and the register can be exported. *(Not built.)*
 
 | Success criterion | Target |
 | --- | --- |
 | Files with an action and a reason | 220 of 220 |
 | Decisions the user makes (patterns + one-offs) | 15 or fewer |
-| Time from start to Apply in the demo | Under 15 minutes |
+| Time from start to Accept changes in the demo | Under 15 minutes |
 | Files deleted | 0 |
 | Retrieval test on the six demo cases | Correct in-force file, or an honest caveat, for all six |
 
@@ -116,7 +122,7 @@ The full list is in [assumptions.md](assumptions.md).
 | The brief says | This brief's position |
 | --- | --- |
 | A "cleanly organised, reliably named" repository is the goal | Organisation is how we get there. The goal is retrieving the right in-force document |
-| "A few hundred file records" | Count agreements, not files: 220 files, about 191 agreements |
+| "A few hundred file records" | Count agreements, not files: 220 files, about 191 agreements by the audit (207 in the build, which links versions more cautiously) |
 | No fixed convention; up to the user | Agreed for the convention. But the *facts* need a fixed shape, or there's nothing reliable to build a convention from |
 | Files sit in folders "that no longer make sense" | Some folder names are instructions (`Templates (do not use)`, `DO NOT DELETE`) and should be respected |
 | The messy cases are mainly filename vs. content | In this data the bigger contradictions are a filename against itself, and files that look alike but are separate deals |
@@ -128,7 +134,7 @@ The full list is in [assumptions.md](assumptions.md).
 
 Open questions:
 
-- [ ] **Undo interface:** an undo on each card, a history panel, or both (leaning both)?
+- [ ] **Undo interface:** an undo on each card, a history panel, or both (leaning both)? *Built: an undo on each card, plus Undo run. The history panel is still open.*
 - [ ] **Who proposes the convention first:** decided: the assistant proposes one to three conventions; the user picks and orders the facets (see Design Decisions #12).
 - [ ] **Corrections mid-conversation:** decided: edit directly or say it; the assistant checks the impact, scopes it on a card and offers to generalise once (see Design Decisions #13)
 - [ ] **Pausing to check elsewhere:** would a user stop to ask a colleague (e.g. on Slack) or check another system, and can open items be answered later, for example when someone asks for that document?
@@ -139,6 +145,7 @@ Open questions:
 | --- | --- | --- |
 | The model merges look-alikes that are separate deals | Medium | Group by deal subject as well as counterparty and type; merging is always the user's call |
 | Too many questions; the flow feels like an interrogation | Medium | Ask about patterns, not files; suggest an answer every time; clear one-offs in one card |
-| The preview isn't trusted as verification because it doesn't look like the team's system | Medium | Mirror the real folder tree; finish with a retrieval test |
+| The register isn't trusted as verification because it doesn't look like the team's system | Medium | Mirror the real folder tree; let users open any file from its row; finish with a retrieval test |
+| Applying as you go leaves a half-organised repository if the user stops mid-way | Medium | Undo on every card and Undo run; a paused state (designed, not built) |
 | A live LLM is slow or inconsistent during the demo | High | Run extraction ahead of time; use the model live only for the conversation |
 | Patterns in the synthetic data don't hold in real repositories | Low | Design for the type of mess, not the exact counts |

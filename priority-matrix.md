@@ -60,6 +60,14 @@ quadrantChart
 | Paused + resume | 3 | 7 | Fake it | One mocked resume card |
 | Old-to-new flow | 3.5 | 8 | Fake it | Counts in the playback card instead |
 
+## How it turned out
+
+The matrix was the plan before building. In the build:
+
+- **Built as planned:** pattern question cards, version stack with evidence, simulated Apply and summary, chat feed with cards, precomputed extraction, grouped register, retrieval test (a live model over the register), detour ask (from any row).
+- **Changed:** Apply happens on each card as it's answered, not once at the end. The facet picker became two cards (top level, then second level) with hover previews. One-offs are one card each, not one card with "accept all". Direct fact edit went further than planned: every field is editable in the table and the side sheet.
+- **Not built:** correction from chat, waiting on a person, compare view, export, change list as its own view, folder tree toggle, pause and resume, new-file filing, old-to-new flow.
+
 ## Suggested build order
 
 1. **Foundations:** precomputed extraction, chat feed with cards, grouped register. Everything else sits on these.
