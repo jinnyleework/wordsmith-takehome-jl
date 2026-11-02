@@ -343,7 +343,6 @@ export function Register({
           />
           <FileSheet
             row={detail}
-            renamed={mode === 'applied'}
             dateLabel={dateLabel}
             onClose={() => setDetailId(null)}
             onEdit={onEdit}
@@ -547,7 +546,7 @@ function SectionTable({
                             <span className="w-4 shrink-0" />
                           )}
                           <span className="flex min-w-0 flex-1 items-center gap-1.5">
-                            <FileIcon name={mode === 'applied' ? r.name : r.original} />
+                            <FileIcon name={mode === 'applied' ? r.display : r.original} />
                             <NameText name={r.display}>
                               <AiText text={r.display} writing={!!change?.name} delay={delay} />
                             </NameText>
@@ -1057,13 +1056,11 @@ function RowCheck({
 
 function FileSheet({
   row,
-  renamed,
   dateLabel,
   onClose,
   onEdit,
 }: {
   row: ViewRow
-  renamed: boolean
   dateLabel: string
   onClose: () => void
   onEdit: (id: string, patch: FieldEdit) => void
@@ -1079,7 +1076,7 @@ function FileSheet({
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const shownName = renamed ? row.name : row.display
+  const shownName = row.display
   const pdf = /\.pdf$/i.test(shownName)
   const note = row.note
 

@@ -69,6 +69,60 @@ body {
 }
 
 /* Content the AI has just rewritten settles in */
+/* Scrollbars: a small thumb with no track, shown only while scrolling.
+   main.tsx sets data-scrolling on whatever is scrolling, then clears it. */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: transparent;
+}
+[data-scrolling]::-webkit-scrollbar-thumb {
+  background: #17171740;
+}
+@supports (-moz-appearance: none) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+  [data-scrolling] {
+    scrollbar-color: #17171740 transparent;
+  }
+}
+
+/* Progressive blur behind a floating header: stronger blur near the top, easing
+   to none, with a tint so text under the header stays legible */
+.progressive-blur {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: -1;
+  height: 64px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--color-body) 0%, color-mix(in srgb, var(--color-body) 70%, transparent) 45%, transparent 100%);
+}
+.progressive-blur > div {
+  position: absolute;
+  inset: 0;
+}
+.progressive-blur > div:nth-child(1) {
+  backdrop-filter: blur(1px);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%);
+}
+.progressive-blur > div:nth-child(2) {
+  backdrop-filter: blur(3px);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 75%);
+}
+.progressive-blur > div:nth-child(3) {
+  backdrop-filter: blur(8px);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 25%, transparent 55%);
+}
+
 @keyframes reveal {
   from {
     opacity: 0;

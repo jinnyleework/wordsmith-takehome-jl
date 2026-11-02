@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { PanelLeft, ChevronDown, CirclePlus, Notebook, ArrowUp, Check, RotateCcw, X } from 'lucide-react'
+import { PanelLeft, ChevronDown, CirclePlus, Notebook, ArrowUp, ArrowDown, Check, RotateCcw, X } from 'lucide-react'
 import { IconMessageFilled } from '@tabler/icons-react'
 import { FileIcon } from './FileIcon'
 import { ActionPlayback, type PlaybackItem } from './cards'
@@ -69,11 +69,22 @@ export function Chat({
     if (about) input.current?.focus()
   }, [about])
   const scroller = useRef<HTMLDivElement>(null)
+  const [atBottom, setAtBottom] = useState(true)
+
+  function checkBottom() {
+    const el = scroller.current
+    if (el) setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 24)
+  }
+
+  function scrollToBottom() {
+    const el = scroller.current
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+  }
 
   // Keep the newest card in view; cards are tall, so scroll after layout
   useLayoutEffect(() => {
-    const el = scroller.current
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+    scrollToBottom()
+    checkBottom()
   }, [messages, thinking])
 
   function submit() {
@@ -85,7 +96,14 @@ export function Chat({
 
   return (
     <section className="flex w-[380px] shrink-0 flex-col border-r border-border-subtle">
-      <header className="flex h-12 items-center gap-3 px-4">
+      <div className="relative flex min-h-0 flex-1 flex-col">
+      {/* The header floats over the feed; what scrolls under it blurs progressively */}
+      <header className="absolute inset-x-0 top-0 z-10 flex h-12 items-center gap-3 px-4">
+        <div aria-hidden className="progressive-blur">
+          <div />
+          <div />
+          <div />
+        </div>
         <PanelLeft size={15} className="text-text-subtle" />
         <span className="text-text-subtle">Repositories</span>
         <span className="h-4 w-px bg-border-base" />
@@ -100,7 +118,12 @@ export function Chat({
         </button>
       </header>
 
-      <div ref={scroller} data-chat-scroll className="flex flex-1 flex-col gap-6 overflow-y-auto px-5 pb-4">
+      <div
+        ref={scroller}
+        data-chat-scroll
+        onScroll={checkBottom}
+        className="flex flex-1 flex-col gap-6 overflow-y-auto px-5 pt-12 pb-4"
+      >
         <div className="mt-auto" />
         {!messages.some((m) => m.card) && (
           <div className="flex flex-col items-start gap-3">
@@ -140,6 +163,18 @@ export function Chat({
           ),
         )}
         {thinking && <p className="shimmer self-start text-body-s">Thinking…</p>}
+      </div>
+
+      <button
+        onClick={scrollToBottom}
+        aria-label="Scroll to the latest message"
+        tabIndex={atBottom ? -1 : 0}
+        className={`absolute bottom-3 left-1/2 z-10 grid size-8 -translate-x-1/2 place-items-center rounded-full border border-border-subtle bg-body text-text-subtle shadow-[0_3px_8px_#1717171a] transition-[opacity,transform] duration-200 hover:text-text-base ${
+          atBottom ? 'pointer-events-none translate-y-1 opacity-0' : 'opacity-100'
+        }`}
+      >
+        <ArrowDown size={15} />
+      </button>
       </div>
 
       <div className="px-6 pb-4">
@@ -202,6 +237,25 @@ function AssistantMessage({
   const [open, setOpen] = useState(false)
   const instant = message.stream === false
   const [textDone, setTextDone] = useState(instant || !message.text)
+  const revealed = useRef<HTMLDivElement>(null)
+  const shown = textDone && !!(card || message.playback)
+
+  // A card lands after its text has streamed, so bring all of it into view then,
+  // and again while it settles (reveal animation, late layout)
+  useLayoutEffect(() => {
+    const el = revealed.current
+    if (!shown || !el) return
+    const fit = () => scrollIntoChat(el)
+    fit()
+    const observer = new ResizeObserver(fit)
+    observer.observe(el)
+    const stop = setTimeout(() => observer.disconnect(), 800)
+    return () => {
+      clearTimeout(stop)
+      observer.disconnect()
+    }
+  }, [shown])
+
   if (message.working) return <Working working={message.working} onDone={onWorkingDone} onStep={onWorkingStep} />
   return (
     <div className="flex flex-col gap-3">
@@ -226,14 +280,31 @@ function AssistantMessage({
       {message.text && (
         <StreamedText text={message.text} instant={instant} onDone={() => setTextDone(true)} />
       )}
-      {message.playback && textDone && (
-        <div className={!instant && message.text ? 'animate-reveal' : undefined}>
-          <ActionPlayback items={message.playback} onShow={onShow} filing={filing} />
-        </div>
-      )}
-      {card && textDone && <div className={!instant && message.text ? 'animate-reveal' : undefined}>{card}</div>}
+      <div ref={revealed} className="flex flex-col gap-3 empty:hidden">
+        {message.playback && textDone && (
+          <div className={!instant && message.text ? 'animate-reveal' : undefined}>
+            <ActionPlayback items={message.playback} onShow={onShow} filing={filing} />
+          </div>
+        )}
+        {card && textDone && <div className={!instant && message.text ? 'animate-reveal' : undefined}>{card}</div>}
+      </div>
     </div>
   )
+}
+
+// Scroll the chat just far enough to show the whole element. One taller than the
+// chat is pinned by its top instead, so its heading is never cut off.
+function scrollIntoChat(el: HTMLElement) {
+  const scroller = el.closest<HTMLElement>('[data-chat-scroll]')
+  if (!scroller) return
+  const box = el.getBoundingClientRect()
+  const view = scroller.getBoundingClientRect()
+  const gap = 16
+  // The header floats over the top of the feed, so the visible area starts below it
+  const top = view.top + parseFloat(getComputedStyle(scroller).paddingTop)
+  const delta =
+    box.height > view.bottom - top - gap * 2 ? box.top - top - gap : Math.max(0, box.bottom - view.bottom + gap)
+  if (delta !== 0) scroller.scrollBy({ top: delta, behavior: 'smooth' })
 }
 
 function StreamedText({

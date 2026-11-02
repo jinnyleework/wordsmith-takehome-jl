@@ -488,7 +488,7 @@ interface LevelOption<K> {
 const previewCount = 3
 
 // Floats beside the hovered option, outside the chat column (Figma nodes 2009:145945, 2009:153959).
-// File rows are 520px so the line between the chip and the outcome stays readable.
+// It hugs its content; file rows may grow to 520px before they wrap.
 function Preview({
   caption,
   top,
@@ -505,7 +505,7 @@ function Preview({
   return (
     <div
       className={`pointer-events-none fixed z-20 flex flex-col overflow-hidden rounded-xl border border-border-subtle bg-body shadow-[0_6px_16px_#1f1f1f0f] ${
-        wide ? 'w-[520px]' : 'w-max max-w-[380px] min-w-[168px]'
+        wide ? 'w-max max-w-[520px] min-w-[168px]' : 'w-max max-w-[380px] min-w-[168px]'
       }`}
       style={{ top, left }}
     >
@@ -597,7 +597,7 @@ function LevelCard<K extends string>({
   title,
   intro,
   optionsTitle,
-  options,
+  options: given,
   value,
   onConfirm,
   onUndo,
@@ -622,6 +622,8 @@ function LevelCard<K extends string>({
   skipNote?: string
   locked: boolean
 }) {
+  // The recommended option always comes first
+  const options = [...given].sort((a, b) => Number(!!b.recommended) - Number(!!a.recommended))
   // Nothing is filled in until the user hovers or picks an option
   const [pick, setPick] = useState<K | null>(value)
   const [hover, setHover] = useState<{ key: K; top: number; left: number } | null>(null)
@@ -1334,7 +1336,6 @@ export function NamingCard({
   const original = patternName(file, 'keep', d.dateSource)
   const example = [{ file: original, says: 'one of four Acme MSA files', source: file.original }]
   const becomes = (pattern: NamingPattern) => [{ ...example[0], says: '', tag: patternName(file, pattern, d.dateSource) }]
-  const inFolder = d.convention === 'A' ? ' The folder already names the company, so the register leaves it out.' : ''
   return (
     <IssueCard<NamingPattern>
       heading="File names"
@@ -1350,14 +1351,14 @@ export function NamingCard({
         {
           key: 'ctd',
           label: namingLabels.ctd,
-          detail: `Files with one company sort together, then by type.${inFolder}`,
+          detail: 'Files with one company sort together, then by type.',
           recommended: true,
           outcome: becomes('ctd'),
         },
         {
           key: 'tcd',
           label: namingLabels.tcd,
-          detail: `Every MSA sorts together, whichever company it is with.${inFolder}`,
+          detail: 'Every MSA sorts together, whichever company it is with.',
           outcome: becomes('tcd'),
         },
         {
@@ -2309,17 +2310,17 @@ export function EmploymentCard({ onShow, d, ...props }: IssueProps & { d: Decisi
       onShowExample={(mode) => onShow(folderOf(harbourline[0].id, d) ?? 'Employment', harbourline.map((r) => r.id), mode)}
       options={[
         {
-          key: 'A',
-          label: 'One Employment folder, flagged to HR',
-          detail: together,
-          recommended: true,
-          outcome: example.map((e) => ({ ...e, tag: 'Employment/' })),
-        },
-        {
           key: 'B',
           label: 'File each under the company in its name',
           detail: beside,
+          recommended: true,
           outcome: example.map((e) => ({ ...e, tag: 'Harbourline Shipping/' })),
+        },
+        {
+          key: 'A',
+          label: 'One Employment folder, flagged to HR',
+          detail: together,
+          outcome: example.map((e) => ({ ...e, tag: 'Employment/' })),
         },
       ]}
     />

@@ -134,7 +134,7 @@ export const endState: Decisions = {
   currentRule: 'signed',
   templates: 'B',
   chains: 'A',
-  employment: 'A',
+  employment: 'B',
   solara: 'A',
   vantage: 'A',
   conflicts: 'A',
@@ -328,21 +328,20 @@ function groupOf(r: FileRow, d: Decisions) {
   return d.convention === 'B' ? r.type : r.status
 }
 
-function displayName(r: FileRow, group: string, d: Decisions) {
+function displayName(r: FileRow, d: Decisions) {
   // The new pattern is the last thing that happens, on Apply. Until then the
   // register keeps each file's name exactly as it is in the repository today.
   if (!d.convention || !d.applied || d.naming === 'keep') return basename(r.original)
-  const counterparty = group.replace(/^_/, '')
   const named = d.placements[r.id] ? r.name.replace(/^Unidentified – /, `${d.placements[r.id]} – `) : r.name
-  // The register has its own date column, so only a date-first pattern keeps the date in view.
-  const core = named.replace(/\.\w+$/, '').replace(/ – (?:19|20)\d\d(?:-\d\d)?(?:-\d\d)?$/, '')
+  const ext = /\.\w+$/.exec(named)?.[0] ?? ''
+  // The extracted name is "Company – Type[ – detail] – date"; rebuild it in the chosen
+  // order, with the date the user settled on (source, supplied or edited), if any.
+  const core = named.slice(0, named.length - ext.length).replace(/ – (?:19|20)\d\d(?:-\d\d)?(?:-\d\d)?$/, '')
   const [company, ...rest] = core.split(' – ')
-  // Under convention A the folder already names the company.
-  const inFolder = d.convention === 'A' && company === counterparty
-  if (d.naming === 'tcd') return [...rest, ...(inFolder ? [] : [company])].join(' – ')
-  const shown = inFolder ? rest.join(' – ') : core
-  const date = d.naming === 'dct' ? agreementDate(r, d.dateSource) : null
-  return date ? `${date} – ${shown}` : shown
+  const date = r.date ? [r.date] : []
+  const parts =
+    d.naming === 'tcd' ? [...rest, company, ...date] : d.naming === 'dct' ? [...date, company, ...rest] : [company, ...rest, ...date]
+  return parts.join(' – ') + ext
 }
 
 function newest(files: FileRow[], source: DateSource | null) {
@@ -856,7 +855,7 @@ export function buildGroups(d: Decisions, edits: Record<string, FieldEdit> = {})
       note: edit?.note !== undefined ? edit.note : base.excerpt,
     }
     const g = groupOf(r, d)
-    const row = { ...r, display: displayName(r, g, d), versionLabel: edit?.versionLabel ?? versionLabel(r, d), handling: handlingOf(r) }
+    const row = { ...r, display: displayName(r, d), versionLabel: edit?.versionLabel ?? versionLabel(r, d), handling: handlingOf(r) }
     map.set(g, [...(map.get(g) ?? []), row])
   }
   numberVersions([...map.values()].flat())
